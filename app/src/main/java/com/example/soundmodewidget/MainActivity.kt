@@ -17,10 +17,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 
 /**
- * 初回起動時に必要な権限をユーザーに要求するための画面。
+ * 初期設定画面。
  *
- * 1. サイレントモード(DND)アクセス — Android 7+ で必須
- * 2. 通知表示権限 — Android 13+ でフォアグラウンドサービスの通知に必要
+ * サイレントモードアクセス権限と通知表示権限の状態を表示し、
+ * 必要なシステム設定または権限要求へ誘導する。
  */
 class MainActivity : AppCompatActivity() {
 
@@ -28,6 +28,9 @@ class MainActivity : AppCompatActivity() {
         private const val REQ_NOTIFICATION = 1001
     }
 
+    /**
+     * 初期表示と権限導線の設定処理。
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -52,10 +55,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Android 13+ の通知権限リクエスト
+        // ---------------------------------------------
+        // Android 13+ 通知権限要求
+        // ---------------------------------------------
+
         requestNotificationPermissionIfNeeded()
     }
 
+    /**
+     * システム設定画面から戻った際の権限状態再描画処理。
+     */
     override fun onResume() {
         super.onResume()
         val tvStatus = findViewById<TextView>(R.id.tv_status)
@@ -63,11 +72,17 @@ class MainActivity : AppCompatActivity() {
         updateStatus(tvStatus, ivIcon)
     }
 
+    /**
+     * 権限状態に応じたステータス表示更新処理。
+     */
     private fun updateStatus(tvStatus: TextView, ivIcon: ImageView) {
         val messages = mutableListOf<String>()
         var allGranted = true
 
-        // 1. DND 権限チェック
+        // ---------------------------------------------
+        // サイレントモードアクセス権限判定
+        // ---------------------------------------------
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (nm.isNotificationPolicyAccessGranted) {
@@ -78,7 +93,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 2. 通知権限チェック (Android 13+)
+        // ---------------------------------------------
+        // 通知表示権限判定
+        // ---------------------------------------------
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED
@@ -102,6 +120,9 @@ class MainActivity : AppCompatActivity() {
         tvStatus.text = messages.joinToString("\n")
     }
 
+    /**
+     * Android 13+ の通知表示権限要求処理。
+     */
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -116,6 +137,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * 通知表示権限要求後の画面状態更新処理。
+     */
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,

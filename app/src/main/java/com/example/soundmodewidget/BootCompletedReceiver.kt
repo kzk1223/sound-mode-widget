@@ -14,11 +14,17 @@ import android.content.Intent
  */
 class BootCompletedReceiver : BroadcastReceiver() {
 
+    /**
+     * 端末起動またはアプリ更新後の監視サービス復帰処理。
+     */
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == Intent.ACTION_MY_PACKAGE_REPLACED
         ) {
-            // ウィジェットが1つ以上配置されている場合のみサービスを開始
+            // ---------------------------------------------
+            // 配置済み AppWidget の存在確認
+            // ---------------------------------------------
+
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(
                 ComponentName(context, SoundModeWidgetProvider::class.java)
