@@ -15,11 +15,14 @@ import android.content.pm.ServiceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.os.IBinder
+import android.os.PowerManager
 
 /**
- * フォアグラウンドサービス:
- * RINGER_MODE_CHANGED_ACTION を動的レシーバーで受信し、
- * ウィジェットのアイコン・ラベル・背景色をリアルタイムに同期する。
+ * 着信モード監視フォアグラウンドサービス。
+ *
+ * 画面表示中は RINGER_MODE_CHANGED_ACTION を動的レシーバーで受信し、
+ * ウィジェットのアイコン・ラベル・背景色を同期する。
+ * 画面消灯中は着信モード監視を停止し、画面点灯またはロック解除時に現在値を同期する。
  *
  * Android 8+ ではマニフェスト登録の暗黙ブロードキャストが制限されるため、
  * サービス内で動的に registerReceiver() する必要がある。
@@ -34,6 +37,9 @@ class RingerModeObserverService : Service() {
         private const val CHANNEL_ID = "ringer_mode_observer"
         private const val NOTIFICATION_ID = 1
 
+        /**
+         * 監視サービスの開始処理。
+         */
         fun start(context: Context) {
             val intent = Intent(context, RingerModeObserverService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -43,46 +49,95 @@ class RingerModeObserverService : Service() {
             }
         }
 
+        /**
+         * 監視サービスの停止処理。
+         */
         fun stop(context: Context) {
             context.stopService(Intent(context, RingerModeObserverService::class.java))
         }
     }
 
-    // ===== 動的レシーバー: 着信モード変更を検知 =====
+    private var isRingerModeReceiverRegistered = false
+    private var isScreenStateReceiverRegistered = false
 
+    // ---------------------------------------------
+    // 動的レシーバー
+    // ---------------------------------------------
+
+    /**
+     * 着信モード変更通知の受信処理。
+     */
     private val ringerModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == AudioManager.RINGER_MODE_CHANGED_ACTION) {
-                refreshAllWidgets(context)
+                refreshOwnAppWidgetInstances(context)
             }
         }
     }
 
-    // ===== Service ライフサイクル =====
+    /**
+     * 画面点灯状態変更通知の受信処理。
+     */
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            when (intent.action) {
+                Intent.ACTION_SCREEN_OFF -> unregisterRingerModeReceiver()
+                Intent.ACTION_SCREEN_ON,
+                Intent.ACTION_USER_PRESENT -> {
+                    registerRingerModeReceiver()
+                    refreshOwnAppWidgetInstances(context)
+                }
+            }
+        }
+    }
 
+    // ---------------------------------------------
+    // Service ライフサイクル
+    // ---------------------------------------------
+
+    /**
+     * サービス生成時の通知開始と監視レシーバー登録処理。
+     */
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         startForegroundCompat()
-        registerRingerModeReceiver()
+        registerScreenStateReceiver()
+        if (isDeviceInteractive()) {
+            registerRingerModeReceiver()
+            refreshOwnAppWidgetInstances(this)
+        }
     }
 
+    /**
+     * OS によるサービス停止後の再生成方針。
+     */
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // サービスがOSに強制終了された場合に自動再起動
         return START_STICKY
     }
 
+    /**
+     * サービス破棄時のレシーバー解除処理。
+     */
     override fun onDestroy() {
+        unregisterRingerModeReceiver()
+        unregisterScreenStateReceiver()
         super.onDestroy()
-        try {
-            unregisterReceiver(ringerModeReceiver)
-        } catch (_: Exception) { }
     }
 
+    /**
+     * バインド非対応の明示。
+     */
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // ===== 通知チャネル & フォアグラウンド通知 =====
+    // ---------------------------------------------
+    // 通知チャネル & フォアグラウンド通知
+    // ---------------------------------------------
 
+    /**
+     * フォアグラウンド通知チャネルの生成処理。
+     */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -98,6 +153,9 @@ class RingerModeObserverService : Service() {
         }
     }
 
+    /**
+     * フォアグラウンドサービス通知の開始処理。
+     */
     private fun startForegroundCompat() {
         val tapIntent = Intent(this, MainActivity::class.java)
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -132,9 +190,24 @@ class RingerModeObserverService : Service() {
         }
     }
 
-    // ===== 動的レシーバー登録 =====
+    // ---------------------------------------------
+    // 動的レシーバー登録
+    // ---------------------------------------------
 
+    /**
+     * 端末の画面表示状態。
+     */
+    private fun isDeviceInteractive(): Boolean {
+        val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+        return powerManager.isInteractive
+    }
+
+    /**
+     * 着信モード変更レシーバーの登録。
+     */
     private fun registerRingerModeReceiver() {
+        if (isRingerModeReceiverRegistered) return
+
         val filter = IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Android 13+ では RECEIVER_NOT_EXPORTED を指定（システムブロードキャスト）
@@ -142,11 +215,64 @@ class RingerModeObserverService : Service() {
         } else {
             registerReceiver(ringerModeReceiver, filter)
         }
+        isRingerModeReceiverRegistered = true
     }
 
-    // ===== 全ウィジェット更新 =====
+    /**
+     * 着信モード変更レシーバーの解除。
+     */
+    private fun unregisterRingerModeReceiver() {
+        if (!isRingerModeReceiverRegistered) return
 
-    private fun refreshAllWidgets(context: Context) {
+        try {
+            unregisterReceiver(ringerModeReceiver)
+        } catch (_: Exception) {
+        } finally {
+            isRingerModeReceiverRegistered = false
+        }
+    }
+
+    /**
+     * 画面状態レシーバーの登録。
+     */
+    private fun registerScreenStateReceiver() {
+        if (isScreenStateReceiverRegistered) return
+
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(screenStateReceiver, filter, RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(screenStateReceiver, filter)
+        }
+        isScreenStateReceiverRegistered = true
+    }
+
+    /**
+     * 画面状態レシーバーの解除。
+     */
+    private fun unregisterScreenStateReceiver() {
+        if (!isScreenStateReceiverRegistered) return
+
+        try {
+            unregisterReceiver(screenStateReceiver)
+        } catch (_: Exception) {
+        } finally {
+            isScreenStateReceiverRegistered = false
+        }
+    }
+
+    // ---------------------------------------------
+    // 自 AppWidget 更新
+    // ---------------------------------------------
+
+    /**
+     * 自アプリに属する AppWidget 全インスタンスの再描画要求処理。
+     */
+    private fun refreshOwnAppWidgetInstances(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(
             ComponentName(context, SoundModeWidgetProvider::class.java)
