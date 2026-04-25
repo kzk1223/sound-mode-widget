@@ -1,0 +1,39 @@
+# Gradle
+.gradle/
+.gradle-native/
+.gradle-tmp/
+.gradle-user-home/
+.kotlin/
+build/
+**/build/
+
+# Android Studio / IntelliJ
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Android generated outputs
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.ap_
+*.aab
+output.json
+
+# Local configuration
+.android-home/
+local.properties
+
+# Signing / secrets
+*.jks
+*.keystore
+keystore.properties
+
+# OS files
+.DS_Store
+Thumbs.db
