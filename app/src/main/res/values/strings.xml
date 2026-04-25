@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">マナーモード切替</string>
+    <string name="widget_description">タップで通常・バイブ・サイレントを切り替えます</string>
+</resources>
