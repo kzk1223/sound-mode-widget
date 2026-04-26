@@ -13,13 +13,13 @@
         android:layout_width="80dp"
         android:layout_height="80dp"
         android:src="@drawable/ic_volume_normal"
-        android:contentDescription="アイコン" />
+        android:contentDescription="@string/settings_icon_content_description" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="マナーモード切替ウィジェット"
+        android:text="@string/settings_title"
         android:textSize="20sp"
         android:textStyle="bold"
         android:textColor="#333333" />
@@ -28,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="タップで 通常 → バイブ → サイレント を切替"
+        android:text="@string/settings_subtitle"
         android:textSize="14sp"
         android:textColor="#666666"
         android:gravity="center" />
@@ -38,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:text="権限を確認中…"
+        android:text="@string/settings_status_checking"
         android:textSize="14sp"
         android:gravity="center" />
 
@@ -47,14 +47,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="サイレントモード権限を許可する"
+        android:text="@string/settings_grant_dnd_permission"
         android:textAllCaps="false" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:text="使い方:\nホーム画面を長押し → ウィジェット →\n「マナーモード切替」を選択"
+        android:text="@string/settings_usage"
         android:textSize="13sp"
         android:textColor="#999999"
         android:gravity="center"

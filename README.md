@@ -1,16 +1,18 @@
-# マナーモード切替ウィジェット (Android)
+# Sound Mode Widget (Android)
 
 1×1 サイズのホーム画面ウィジェットで、タップするたびに **通常 → バイブ → サイレント** と切り替わります。
+サイレント状態は DND（通知の割り込み制限）も含めて判定します。
+アプリ名は端末の言語にかかわらず **Sound Mode Widget** で表示されます。
 
 ---
 
 ## 動作仕様
 
-| モード | アイコン | 背景色 | ラベル |
-|--------|----------|--------|--------|
-| 通常   | 🔊 スピーカー＋音波 | 🟩 緑 `#4CAF50` | 通常 |
-| バイブ | 📳 振動するスマホ | 🟧 橙 `#FF9800` | バイブ |
-| サイレント | 🔇 ミュートスピーカー | 🟥 赤 `#F44336` | サイレント |
+| モード | アイコン | 背景色 |
+|--------|----------|--------|
+| 通常   | 🔊 スピーカー＋音波 | 🟩 緑 `#4CAF50` |
+| バイブ | 📳 振動するスマホ | 🟧 橙 `#FF9800` |
+| サイレント | 🔇 ミュートスピーカー | 🟥 赤 `#F44336` |
 
 ---
 
@@ -19,9 +21,18 @@
 ```
 sound-mode-widget/
 ├── build.gradle                 # プロジェクトレベル
+├── gradle.properties
+├── gradlew
+├── gradlew.bat
 ├── settings.gradle
+├── AGENTS.md
+├── gradle/
+│   └── wrapper/
+│       ├── gradle-wrapper.jar
+│       └── gradle-wrapper.properties
 └── app/
     ├── build.gradle             # アプリレベル
+    ├── proguard-rules.pro
     └── src/main/
         ├── AndroidManifest.xml
         ├── java/com/example/soundmodewidget/
@@ -42,9 +53,11 @@ sound-mode-widget/
             │   └── bg_silent.xml             ← 赤背景
             ├── xml/
             │   └── sound_mode_widget_info.xml ← ウィジェット定義
-            └── values/
-                ├── strings.xml
-                └── themes.xml
+            ├── values/
+            │   ├── strings.xml                ← 既定の英語文言
+            │   └── themes.xml
+            └── values-ja/
+                └── strings.xml                ← 日本語端末向け文言
 ```
 
 ---
@@ -56,14 +69,20 @@ sound-mode-widget/
 1. Android Studio で `sound-mode-widget/` フォルダを開く
 2. `Run > Run 'app'` で実機 or エミュレータにインストール
 3. アプリ起動 → 「サイレントモード権限を許可する」をタップ
-4. ホーム画面を長押し → ウィジェット → 「マナーモード切替」を追加
+4. ホーム画面を長押し → ウィジェット → 「Sound Mode Widget」を追加
 
 ### コマンドラインの場合
 
-```bash
+```powershell
 cd sound-mode-widget
-./gradlew assembleDebug
-adb install app/build/outputs/apk/debug/app-debug.apk
+
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+$env:GRADLE_USER_HOME=(Resolve-Path .\.gradle-user-home).Path
+$env:ANDROID_USER_HOME=(Resolve-Path .\.android-home).Path
+
+.\gradlew.bat :app:assembleDebug --no-daemon
+& 'C:\Users\kani\AppData\Local\Android\Sdk\platform-tools\adb.exe' install app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ---
@@ -86,15 +105,18 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ### ウィジェットタップ時
 1. ウィジェットをタップすると `ACTION_TOGGLE` ブロードキャストが発行される
-2. `SoundModeWidgetProvider.onReceive()` が `AudioManager.ringerMode` を読み取り、次のモードへ切替
-3. 新しいモードに応じてアイコン・ラベル・背景色を `RemoteViews` で更新
+2. `SoundModeWidgetProvider.onReceive()` が `AudioManager.ringerMode` と DND 状態を読み取り、実効モードを判定
+3. 通常 → バイブは `AudioManager.ringerMode`、バイブ → サイレントは `NotificationManager.setInterruptionFilter()` で切替
+4. サイレント → 通常では DND を解除し、`AudioManager.ringerMode` を通常へ戻す
+5. 新しいモードに応じてアイコン・背景色を `RemoteViews` で更新
 
 ### 外部からのモード変更を検知（自動同期）
 1. ウィジェット配置時に `RingerModeObserverService`（フォアグラウンドサービス）が起動
-2. サービス内で `RINGER_MODE_CHANGED_ACTION` の動的 BroadcastReceiver を登録
-3. 音量ボタン・クイック設定・他アプリ等でモードが変わるとレシーバーが発火
-4. 全ウィジェットのUI を現在のモードに合わせて即時更新
-5. 端末再起動時は `BootCompletedReceiver` がサービスを再開
+2. サービス内で `RINGER_MODE_CHANGED_ACTION` と `ACTION_INTERRUPTION_FILTER_CHANGED` の動的 BroadcastReceiver を登録
+3. 音量ボタン・クイック設定・他アプリ等で着信モードや DND 状態が変わるとレシーバーが発火
+4. `ACTION_REFRESH` で全ウィジェットの UI を現在の実効モードに合わせて更新
+5. 画面消灯時は着信モード監視を解除し、画面点灯またはロック解除時に再登録して現在値を同期
+6. 端末再起動時やアプリ更新時は `BootCompletedReceiver` が配置済みウィジェットの存在を確認してサービスを再開
 
 > **なぜフォアグラウンドサービスが必要か？**
 > Android 8+ ではマニフェスト登録の暗黙ブロードキャスト（`RINGER_MODE_CHANGED_ACTION` 含む）が
@@ -102,12 +124,11 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ---
 
-## カスタマイズ
+## 多言語対応
 
-- **背景色**: `res/drawable/bg_*.xml` の `solid android:color` を変更
-- **アイコン**: `res/drawable/ic_volume_*.xml` を差し替え
-- **ラベル**: `SoundModeWidgetProvider.kt` 内の `setTextViewText()` を編集
-- **ウィジェットサイズ**: `sound_mode_widget_info.xml` の `minWidth`/`minHeight` を変更
+- 既定ロケールは英語です。
+- 日本語端末では `values-ja/strings.xml` の日本語文言を表示します。
+- アプリ名 `app_name` は全ロケールで `Sound Mode Widget` に統一しています。
 
 ---
 

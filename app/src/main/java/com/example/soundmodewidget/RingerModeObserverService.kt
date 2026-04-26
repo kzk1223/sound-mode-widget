@@ -69,7 +69,10 @@ class RingerModeObserverService : Service() {
      */
     private val ringerModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == AudioManager.RINGER_MODE_CHANGED_ACTION) {
+            if (
+                intent.action == AudioManager.RINGER_MODE_CHANGED_ACTION ||
+                intent.action == NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED
+            ) {
                 refreshOwnAppWidgetInstances(context)
             }
         }
@@ -142,10 +145,10 @@ class RingerModeObserverService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "マナーモード監視",
+                getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_MIN   // 最小限の通知
             ).apply {
-                description = "着信モードの変更を監視してウィジェットを更新します"
+                description = getString(R.string.notification_channel_description)
                 setShowBadge(false)
             }
             val nm = getSystemService(NotificationManager::class.java)
@@ -171,8 +174,8 @@ class RingerModeObserverService : Service() {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
         }.apply {
-            setContentTitle("マナーモード監視中")
-            setContentText("着信モードの変更を検知してウィジェットを更新します")
+            setContentTitle(getString(R.string.notification_title))
+            setContentText(getString(R.string.notification_text))
             setSmallIcon(R.drawable.ic_volume_normal)
             setContentIntent(pendingIntent)
             setOngoing(true)
@@ -208,10 +211,15 @@ class RingerModeObserverService : Service() {
     private fun registerRingerModeReceiver() {
         if (isRingerModeReceiverRegistered) return
 
-        val filter = IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION)
+        val filter = IntentFilter().apply {
+            addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ では RECEIVER_NOT_EXPORTED を指定（システムブロードキャスト）
-            registerReceiver(ringerModeReceiver, filter, RECEIVER_NOT_EXPORTED)
+            // Android 13+ では一部のシステムブロードキャスト受信に exported 指定が必要
+            registerReceiver(ringerModeReceiver, filter, RECEIVER_EXPORTED)
         } else {
             registerReceiver(ringerModeReceiver, filter)
         }
@@ -279,8 +287,7 @@ class RingerModeObserverService : Service() {
         )
         if (ids.isNotEmpty()) {
             val intent = Intent(context, SoundModeWidgetProvider::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                action = SoundModeWidgetProvider.ACTION_REFRESH
             }
             context.sendBroadcast(intent)
         }
