@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sound Mode Widget</string>
+    <string name="widget_description">タップで通常・バイブ・サイレントを切り替えます</string>
+    <string name="settings_icon_content_description">アイコン</string>
+    <string name="settings_title">マナーモード切替ウィジェット</string>
+    <string name="settings_subtitle">タップで 通常 → バイブ → サイレント を切替</string>
+    <string name="settings_status_checking">権限を確認中…</string>
+    <string name="settings_grant_dnd_permission">サイレントモード権限を許可する</string>
+    <string name="settings_usage">使い方:\nホーム画面を長押し → ウィジェット →\n「マナーモード切替」を選択</string>
+    <string name="status_dnd_permission_ok">✅ サイレントモード権限: OK</string>
+    <string name="status_dnd_permission_denied">⚠️ サイレントモード権限: 未許可</string>
+    <string name="status_notification_permission_ok">✅ 通知権限: OK</string>
+    <string name="status_notification_permission_denied">⚠️ 通知権限: 未許可（監視サービスに必要）</string>
+    <string name="status_add_widget_instruction">\nウィジェットをホーム画面に追加してください</string>
+    <string name="toast_dnd_permission_already_granted">DND権限は既に付与されています</string>
+    <string name="toast_dnd_permission_not_required">この端末ではDND権限は不要です</string>
+    <string name="notification_channel_name">マナーモード監視</string>
+    <string name="notification_channel_description">着信モードの変更を監視してウィジェットを更新します</string>
+    <string name="notification_title">マナーモード監視中</string>
+    <string name="notification_text">着信モードの変更を検知してウィジェットを更新します</string>
+</resources>
