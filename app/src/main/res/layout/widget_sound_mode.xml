@@ -22,20 +22,6 @@
             android:src="@drawable/ic_volume_normal"
             android:contentDescription="@string/app_name" />
 
-        <TextView
-            android:id="@+id/widget_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="通常"
-            android:textColor="#FFFFFF"
-            android:textSize="10sp"
-            android:textStyle="bold"
-            android:shadowColor="#80000000"
-            android:shadowDx="1"
-            android:shadowDy="1"
-            android:shadowRadius="2" />
-
     </LinearLayout>
 
 </FrameLayout>
