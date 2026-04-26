@@ -36,7 +36,7 @@
         <receiver
             android:name=".SoundModeWidgetProvider"
             android:exported="true"
-            android:label="マナーモード切替">
+            android:label="Sound Mode Widget">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.soundmodewidget.ACTION_TOGGLE" />
