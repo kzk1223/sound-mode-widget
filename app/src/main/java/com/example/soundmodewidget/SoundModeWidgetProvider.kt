@@ -79,6 +79,7 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
             ACTION_TOGGLE -> {
                 toggleSoundMode(context)
                 updateAllWidgets(context)
+                ensureServiceRunning(context)
             }
             ACTION_REFRESH -> {
                 updateAllWidgets(context)
