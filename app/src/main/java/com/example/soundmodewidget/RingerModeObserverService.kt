@@ -69,7 +69,10 @@ class RingerModeObserverService : Service() {
      */
     private val ringerModeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            if (intent.action == AudioManager.RINGER_MODE_CHANGED_ACTION) {
+            if (
+                intent.action == AudioManager.RINGER_MODE_CHANGED_ACTION ||
+                intent.action == NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED
+            ) {
                 refreshOwnAppWidgetInstances(context)
             }
         }
@@ -208,10 +211,15 @@ class RingerModeObserverService : Service() {
     private fun registerRingerModeReceiver() {
         if (isRingerModeReceiverRegistered) return
 
-        val filter = IntentFilter(AudioManager.RINGER_MODE_CHANGED_ACTION)
+        val filter = IntentFilter().apply {
+            addAction(AudioManager.RINGER_MODE_CHANGED_ACTION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                addAction(NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED)
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            // Android 13+ では RECEIVER_NOT_EXPORTED を指定（システムブロードキャスト）
-            registerReceiver(ringerModeReceiver, filter, RECEIVER_NOT_EXPORTED)
+            // Android 13+ では一部のシステムブロードキャスト受信に exported 指定が必要
+            registerReceiver(ringerModeReceiver, filter, RECEIVER_EXPORTED)
         } else {
             registerReceiver(ringerModeReceiver, filter)
         }
@@ -279,8 +287,7 @@ class RingerModeObserverService : Service() {
         )
         if (ids.isNotEmpty()) {
             val intent = Intent(context, SoundModeWidgetProvider::class.java).apply {
-                action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                action = SoundModeWidgetProvider.ACTION_REFRESH
             }
             context.sendBroadcast(intent)
         }
