@@ -12,7 +12,7 @@ import android.os.Build
 import android.widget.RemoteViews
 
 /**
- * マナーモード切替ウィジェット (1×1)
+ * マナーモード切替 AppWidget。
  *
  * クリックごとに 通常 → バイブ → サイレント → 通常 … とトグル。
  * 各モードに応じてアイコンとラベルを切り替える。
@@ -24,26 +24,34 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_TOGGLE = "com.example.soundmodewidget.ACTION_TOGGLE"
+        const val ACTION_REFRESH = "com.example.soundmodewidget.ACTION_REFRESH"
     }
 
-    // ========== 最初のウィジェットが配置された ==========
+    // ---------------------------------------------
+    // AppWidget ライフサイクル
+    // ---------------------------------------------
 
+    /**
+     * 初回 AppWidget 配置時の監視サービス開始処理。
+     */
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        // 着信モード変更の監視サービスを開始
-        RingerModeObserverService.start(context)
+        updateAllWidgets(context)
+        ensureServiceRunning(context)
     }
 
-    // ========== 最後のウィジェットが削除された ==========
-
+    /**
+     * 最終 AppWidget 削除時の監視サービス停止処理。
+     */
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         // 監視サービスを停止
         RingerModeObserverService.stop(context)
     }
 
-    // ========== ウィジェット更新 ==========
-
+    /**
+     * AppWidget 表示更新処理。
+     */
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -57,19 +65,30 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
         ensureServiceRunning(context)
     }
 
-    // ========== クリックイベント受信 ==========
+    // ---------------------------------------------
+    // AppWidget 操作
+    // ---------------------------------------------
 
+    /**
+     * AppWidget クリックイベント受信処理。
+     */
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
-        if (intent.action == ACTION_TOGGLE) {
-            toggleSoundMode(context)
-            updateAllWidgets(context)
+        when (intent.action) {
+            ACTION_TOGGLE -> {
+                toggleSoundMode(context)
+                updateAllWidgets(context)
+            }
+            ACTION_REFRESH -> {
+                updateAllWidgets(context)
+            }
         }
     }
 
-    // ========== サウンドモード切替ロジック ==========
-
+    /**
+     * 端末の着信モード切替処理。
+     */
     private fun toggleSoundMode(context: Context) {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -102,8 +121,13 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
         return notificationManager.isNotificationPolicyAccessGranted
     }
 
-    // ========== ユーティリティ ==========
+    // ---------------------------------------------
+    // AppWidget 更新ユーティリティ
+    // ---------------------------------------------
 
+    /**
+     * 自 AppWidget 全インスタンスの表示更新処理。
+     */
     private fun updateAllWidgets(context: Context) {
         val manager = AppWidgetManager.getInstance(context)
         val ids = manager.getAppWidgetIds(
@@ -124,8 +148,9 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
         } catch (_: Exception) { }
     }
 
-    // ========== ウィジェットUI更新 ==========
-
+    /**
+     * AppWidget 単一インスタンスの表示構築処理。
+     */
     private fun updateWidget(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -154,14 +179,18 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
 
         val toggleIntent = Intent(context, SoundModeWidgetProvider::class.java).apply {
             action = ACTION_TOGGLE
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         } else {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
-        val pendingIntent = PendingIntent.getBroadcast(context, 0, toggleIntent, flags)
+        val pendingIntent = PendingIntent.getBroadcast(context, appWidgetId, toggleIntent, flags)
         views.setOnClickPendingIntent(R.id.widget_background, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_content, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_icon, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_label, pendingIntent)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
