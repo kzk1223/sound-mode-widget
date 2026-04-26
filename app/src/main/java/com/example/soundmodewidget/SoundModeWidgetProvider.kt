@@ -24,6 +24,7 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
 
     companion object {
         const val ACTION_TOGGLE = "com.example.soundmodewidget.ACTION_TOGGLE"
+        const val ACTION_REFRESH = "com.example.soundmodewidget.ACTION_REFRESH"
     }
 
     // ---------------------------------------------
@@ -35,8 +36,8 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
      */
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-        // 着信モード変更の監視サービスを開始
-        RingerModeObserverService.start(context)
+        updateAllWidgets(context)
+        ensureServiceRunning(context)
     }
 
     /**
@@ -74,9 +75,14 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
 
-        if (intent.action == ACTION_TOGGLE) {
-            toggleSoundMode(context)
-            updateAllWidgets(context)
+        when (intent.action) {
+            ACTION_TOGGLE -> {
+                toggleSoundMode(context)
+                updateAllWidgets(context)
+            }
+            ACTION_REFRESH -> {
+                updateAllWidgets(context)
+            }
         }
     }
 
@@ -173,14 +179,18 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
 
         val toggleIntent = Intent(context, SoundModeWidgetProvider::class.java).apply {
             action = ACTION_TOGGLE
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         }
         val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         } else {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
-        val pendingIntent = PendingIntent.getBroadcast(context, 0, toggleIntent, flags)
+        val pendingIntent = PendingIntent.getBroadcast(context, appWidgetId, toggleIntent, flags)
         views.setOnClickPendingIntent(R.id.widget_background, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_content, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_icon, pendingIntent)
+        views.setOnClickPendingIntent(R.id.widget_label, pendingIntent)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }

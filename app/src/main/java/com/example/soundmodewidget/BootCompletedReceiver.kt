@@ -30,6 +30,10 @@ class BootCompletedReceiver : BroadcastReceiver() {
                 ComponentName(context, SoundModeWidgetProvider::class.java)
             )
             if (ids.isNotEmpty()) {
+                val refreshIntent = Intent(context, SoundModeWidgetProvider::class.java).apply {
+                    action = SoundModeWidgetProvider.ACTION_REFRESH
+                }
+                context.sendBroadcast(refreshIntent)
                 RingerModeObserverService.start(context)
             }
         }
