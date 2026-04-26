@@ -1,16 +1,17 @@
 # マナーモード切替ウィジェット (Android)
 
 1×1 サイズのホーム画面ウィジェットで、タップするたびに **通常 → バイブ → サイレント** と切り替わります。
+サイレント状態は DND（通知の割り込み制限）も含めて判定します。
 
 ---
 
 ## 動作仕様
 
-| モード | アイコン | 背景色 | ラベル |
-|--------|----------|--------|--------|
-| 通常   | 🔊 スピーカー＋音波 | 🟩 緑 `#4CAF50` | 通常 |
-| バイブ | 📳 振動するスマホ | 🟧 橙 `#FF9800` | バイブ |
-| サイレント | 🔇 ミュートスピーカー | 🟥 赤 `#F44336` | サイレント |
+| モード | アイコン | 背景色 |
+|--------|----------|--------|
+| 通常   | 🔊 スピーカー＋音波 | 🟩 緑 `#4CAF50` |
+| バイブ | 📳 振動するスマホ | 🟧 橙 `#FF9800` |
+| サイレント | 🔇 ミュートスピーカー | 🟥 赤 `#F44336` |
 
 ---
 
@@ -86,14 +87,16 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 ### ウィジェットタップ時
 1. ウィジェットをタップすると `ACTION_TOGGLE` ブロードキャストが発行される
-2. `SoundModeWidgetProvider.onReceive()` が `AudioManager.ringerMode` を読み取り、次のモードへ切替
-3. 新しいモードに応じてアイコン・ラベル・背景色を `RemoteViews` で更新
+2. `SoundModeWidgetProvider.onReceive()` が `AudioManager.ringerMode` と DND 状態を読み取り、実効モードを判定
+3. 通常 → バイブは `AudioManager.ringerMode`、バイブ → サイレントは `NotificationManager.setInterruptionFilter()` で切替
+4. サイレント → 通常では DND を解除し、`AudioManager.ringerMode` を通常へ戻す
+5. 新しいモードに応じてアイコン・背景色を `RemoteViews` で更新
 
 ### 外部からのモード変更を検知（自動同期）
 1. ウィジェット配置時に `RingerModeObserverService`（フォアグラウンドサービス）が起動
 2. サービス内で `RINGER_MODE_CHANGED_ACTION` の動的 BroadcastReceiver を登録
 3. 音量ボタン・クイック設定・他アプリ等でモードが変わるとレシーバーが発火
-4. 全ウィジェットのUI を現在のモードに合わせて即時更新
+4. 全ウィジェットの UI を現在の実効モードに合わせて即時更新
 5. 端末再起動時は `BootCompletedReceiver` がサービスを再開
 
 > **なぜフォアグラウンドサービスが必要か？**
@@ -106,7 +109,6 @@ adb install app/build/outputs/apk/debug/app-debug.apk
 
 - **背景色**: `res/drawable/bg_*.xml` の `solid android:color` を変更
 - **アイコン**: `res/drawable/ic_volume_*.xml` を差し替え
-- **ラベル**: `SoundModeWidgetProvider.kt` 内の `setTextViewText()` を編集
 - **ウィジェットサイズ**: `sound_mode_widget_info.xml` の `minWidth`/`minHeight` を変更
 
 ---
