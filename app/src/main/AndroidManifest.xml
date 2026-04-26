@@ -40,6 +40,7 @@
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.soundmodewidget.ACTION_TOGGLE" />
+                <action android:name="com.example.soundmodewidget.ACTION_REFRESH" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
