@@ -15,7 +15,7 @@ import android.widget.RemoteViews
  * マナーモード切替 AppWidget。
  *
  * クリックごとに 通常 → バイブ → サイレント → 通常 … とトグル。
- * 各モードに応じてアイコンとラベルを切り替える。
+ * 各モードに応じてアイコンと背景色を切り替える。
  *
  * 外部からの着信モード変更（音量ボタン、クイック設定等）は
  * RingerModeObserverService が検知し、ウィジェットを自動更新する。
@@ -92,16 +92,17 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
     private fun toggleSoundMode(context: Context) {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-        when (audio.ringerMode) {
+        when (getEffectiveRingerMode(context, audio)) {
             AudioManager.RINGER_MODE_NORMAL  -> {
                 audio.ringerMode = AudioManager.RINGER_MODE_VIBRATE
             }
             AudioManager.RINGER_MODE_VIBRATE -> {
                 if (!canChangeDoNotDisturbMode(context)) return
-                audio.ringerMode = AudioManager.RINGER_MODE_SILENT
+                setInterruptionFilter(context, NotificationManager.INTERRUPTION_FILTER_NONE)
             }
             AudioManager.RINGER_MODE_SILENT  -> {
                 if (!canChangeDoNotDisturbMode(context)) return
+                setInterruptionFilter(context, NotificationManager.INTERRUPTION_FILTER_ALL)
                 audio.ringerMode = AudioManager.RINGER_MODE_NORMAL
             }
         }
@@ -119,6 +120,45 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         return notificationManager.isNotificationPolicyAccessGranted
+    }
+
+    /**
+     * 通知割り込みフィルターの変更処理。
+     */
+    private fun setInterruptionFilter(context: Context, interruptionFilter: Int) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return
+        }
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (!notificationManager.isNotificationPolicyAccessGranted) {
+            return
+        }
+
+        notificationManager.setInterruptionFilter(interruptionFilter)
+    }
+
+    /**
+     * DND 状態を含めた実効着信モードの取得処理。
+     */
+    private fun getEffectiveRingerMode(context: Context, audio: AudioManager): Int {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return audio.ringerMode
+        }
+
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (
+            notificationManager.isNotificationPolicyAccessGranted &&
+            notificationManager.currentInterruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE
+        ) {
+            return AudioManager.RINGER_MODE_SILENT
+        }
+
+        return audio.ringerMode
     }
 
     // ---------------------------------------------
@@ -159,20 +199,17 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
         val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val views = RemoteViews(context.packageName, R.layout.widget_sound_mode)
 
-        when (audio.ringerMode) {
+        when (getEffectiveRingerMode(context, audio)) {
             AudioManager.RINGER_MODE_NORMAL -> {
                 views.setImageViewResource(R.id.widget_icon, R.drawable.ic_volume_normal)
-                views.setTextViewText(R.id.widget_label, "通常")
                 views.setInt(R.id.widget_background, "setBackgroundResource", R.drawable.bg_normal)
             }
             AudioManager.RINGER_MODE_VIBRATE -> {
                 views.setImageViewResource(R.id.widget_icon, R.drawable.ic_volume_vibrate)
-                views.setTextViewText(R.id.widget_label, "バイブ")
                 views.setInt(R.id.widget_background, "setBackgroundResource", R.drawable.bg_vibrate)
             }
             AudioManager.RINGER_MODE_SILENT -> {
                 views.setImageViewResource(R.id.widget_icon, R.drawable.ic_volume_silent)
-                views.setTextViewText(R.id.widget_label, "サイレント")
                 views.setInt(R.id.widget_background, "setBackgroundResource", R.drawable.bg_silent)
             }
         }
@@ -190,7 +227,6 @@ class SoundModeWidgetProvider : AppWidgetProvider() {
         views.setOnClickPendingIntent(R.id.widget_background, pendingIntent)
         views.setOnClickPendingIntent(R.id.widget_content, pendingIntent)
         views.setOnClickPendingIntent(R.id.widget_icon, pendingIntent)
-        views.setOnClickPendingIntent(R.id.widget_label, pendingIntent)
 
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
