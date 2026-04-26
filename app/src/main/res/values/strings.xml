@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Sound Mode Widget</string>
-    <string name="widget_description">タップで通常・バイブ・サイレントを切り替えます</string>
+    <string name="widget_description">Tap to switch between Normal, Vibrate, and Silent</string>
+    <string name="settings_icon_content_description">Icon</string>
+    <string name="settings_title">Sound Mode Widget</string>
+    <string name="settings_subtitle">Tap to switch between Normal, Vibrate, and Silent</string>
+    <string name="settings_status_checking">Checking permissions...</string>
+    <string name="settings_grant_dnd_permission">Allow Do Not Disturb access</string>
+    <string name="settings_usage">How to use:\nLong-press the Home screen → Widgets →\nSelect "Sound Mode Widget"</string>
+    <string name="status_dnd_permission_ok">✅ Do Not Disturb access: OK</string>
+    <string name="status_dnd_permission_denied">⚠️ Do Not Disturb access: Not granted</string>
+    <string name="status_notification_permission_ok">✅ Notification permission: OK</string>
+    <string name="status_notification_permission_denied">⚠️ Notification permission: Not granted (required for monitoring service)</string>
+    <string name="status_add_widget_instruction">\nAdd the widget to your Home screen</string>
+    <string name="toast_dnd_permission_already_granted">Do Not Disturb access is already granted</string>
+    <string name="toast_dnd_permission_not_required">This device does not require Do Not Disturb access</string>
+    <string name="notification_channel_name">Sound mode monitor</string>
+    <string name="notification_channel_description">Monitors sound mode changes and updates the widget</string>
+    <string name="notification_title">Monitoring sound mode</string>
+    <string name="notification_text">Detects sound mode changes and updates the widget</string>
 </resources>

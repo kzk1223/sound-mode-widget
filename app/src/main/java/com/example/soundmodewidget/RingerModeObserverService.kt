@@ -142,10 +142,10 @@ class RingerModeObserverService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "マナーモード監視",
+                getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_MIN   // 最小限の通知
             ).apply {
-                description = "着信モードの変更を監視してウィジェットを更新します"
+                description = getString(R.string.notification_channel_description)
                 setShowBadge(false)
             }
             val nm = getSystemService(NotificationManager::class.java)
@@ -171,8 +171,8 @@ class RingerModeObserverService : Service() {
             @Suppress("DEPRECATION")
             Notification.Builder(this)
         }.apply {
-            setContentTitle("マナーモード監視中")
-            setContentText("着信モードの変更を検知してウィジェットを更新します")
+            setContentTitle(getString(R.string.notification_title))
+            setContentText(getString(R.string.notification_text))
             setSmallIcon(R.drawable.ic_volume_normal)
             setContentIntent(pendingIntent)
             setOngoing(true)

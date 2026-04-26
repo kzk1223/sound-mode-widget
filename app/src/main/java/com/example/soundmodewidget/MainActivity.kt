@@ -48,10 +48,10 @@ class MainActivity : AppCompatActivity() {
                     // システムの DND アクセス設定画面へ遷移
                     startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
                 } else {
-                    Toast.makeText(this, "DND権限は既に付与されています", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.toast_dnd_permission_already_granted, Toast.LENGTH_SHORT).show()
                 }
             } else {
-                Toast.makeText(this, "この端末ではDND権限は不要です", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_dnd_permission_not_required, Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -86,9 +86,9 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (nm.isNotificationPolicyAccessGranted) {
-                messages.add("✅ サイレントモード権限: OK")
+                messages.add(getString(R.string.status_dnd_permission_ok))
             } else {
-                messages.add("⚠️ サイレントモード権限: 未許可")
+                messages.add(getString(R.string.status_dnd_permission_denied))
                 allGranted = false
             }
         }
@@ -101,15 +101,15 @@ class MainActivity : AppCompatActivity() {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 == PackageManager.PERMISSION_GRANTED
             ) {
-                messages.add("✅ 通知権限: OK")
+                messages.add(getString(R.string.status_notification_permission_ok))
             } else {
-                messages.add("⚠️ 通知権限: 未許可（監視サービスに必要）")
+                messages.add(getString(R.string.status_notification_permission_denied))
                 allGranted = false
             }
         }
 
         if (allGranted) {
-            messages.add("\nウィジェットをホーム画面に追加してください")
+            messages.add(getString(R.string.status_add_widget_instruction))
             tvStatus.setTextColor(0xFF2E7D32.toInt())
             ivIcon.setImageResource(R.drawable.ic_volume_normal)
         } else {
