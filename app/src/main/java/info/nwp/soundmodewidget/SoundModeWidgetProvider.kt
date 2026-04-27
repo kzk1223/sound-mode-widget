@@ -1,4 +1,4 @@
-package com.example.soundmodewidget
+package info.nwp.soundmodewidget
 
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
@@ -23,8 +23,8 @@ import android.widget.RemoteViews
 class SoundModeWidgetProvider : AppWidgetProvider() {
 
     companion object {
-        const val ACTION_TOGGLE = "com.example.soundmodewidget.ACTION_TOGGLE"
-        const val ACTION_REFRESH = "com.example.soundmodewidget.ACTION_REFRESH"
+        const val ACTION_TOGGLE = "info.nwp.soundmodewidget.ACTION_TOGGLE"
+        const val ACTION_REFRESH = "info.nwp.soundmodewidget.ACTION_REFRESH"
     }
 
     // ---------------------------------------------

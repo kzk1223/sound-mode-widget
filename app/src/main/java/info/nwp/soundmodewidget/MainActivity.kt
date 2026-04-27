@@ -1,4 +1,4 @@
-package com.example.soundmodewidget
+package info.nwp.soundmodewidget
 
 import android.Manifest
 import android.app.NotificationManager

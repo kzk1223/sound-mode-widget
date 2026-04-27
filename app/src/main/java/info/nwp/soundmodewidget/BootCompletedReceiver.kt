@@ -1,4 +1,4 @@
-package com.example.soundmodewidget
+package info.nwp.soundmodewidget
 
 import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
