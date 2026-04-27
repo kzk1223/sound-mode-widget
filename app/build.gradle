@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = 'com.example.soundmodewidget'
+    namespace = 'info.nwp.soundmodewidget'
     compileSdk = 36
 
     defaultConfig {
-        applicationId "com.example.soundmodewidget"
+        applicationId "info.nwp.soundmodewidget"
         minSdk 24
         targetSdk 35
         versionCode 1
